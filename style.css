@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+/* Android Yumuşak Ekran Geçişi */
+.page-view {
+    animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Takvim Hücre Stilleri */
+.calendar-day {
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+.calendar-day-taken {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.calendar-day-skipped {
+    background-color: #ffe4e6;
+    color: #9f1239;
+    border: 1px solid #fecdd3;
+}
+
+.calendar-day-today {
+    box-shadow: 0 0 0 2px #4f46e5;
+}
+
+/* Alt Navigasyon Aktif Durumu */
+.mobile-nav-btn.active {
+    color: #4f46e5 !important;
+}
+
+.mobile-nav-btn.active i {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+}
