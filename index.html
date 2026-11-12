@@ -2,390 +2,367 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#4f46e5">
-    <title>Sağlık & İlaç Takip Asistanı</title>
-    <!-- Tailwind CSS CDN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rutiva</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts & FontAwesome Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Özel CSS Dosyası -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-
-    <!-- Firebase SDK (Auth, Firestore ve Analytics) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+        .calendar-day {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+            font-size: 0.75rem;
+        }
+        .calendar-day-taken {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            font-weight: 700;
+        }
+        .calendar-day-skipped {
+            background-color: #ffe4e6;
+            color: #9f1239;
+            border: 1px solid #fda4af;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-28 md:pb-12 select-none">
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-24 select-none">
 
-    <!-- Header / Üst Bar (Bildirim Çubuğu Boşluğu Ayarlı) -->
-    <header id="appHeader" class="bg-indigo-600 text-white shadow-md sticky top-0 z-30 safe-top-header">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
-            <button onclick="navigateTo('page-home')" class="flex items-center gap-2.5 hover:opacity-90 transition">
-                <i class="fa-solid fa-prescription-bottle-medical text-2xl"></i>
-                <h1 class="text-lg font-bold tracking-wide">Sağlık Takipçim</h1>
+    <!-- ÜST ÇUBUK (Standart Durum Çubuğu Uyumu) -->
+    <header class="bg-indigo-600 text-white px-4 py-3 shadow-md sticky top-0 z-30 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                <i class="fa-solid fa-capsules text-white text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base leading-tight tracking-wide">Rutiva</h1>
+                <p class="text-[10px] text-indigo-100 leading-none">Akıllı İlaç & Sağlık Takibi</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="homeLoginBtn" onclick="navigateTo('page-login')" class="bg-white text-indigo-600 font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm hover:bg-indigo-50 transition">
+                Giriş Yap
             </button>
-            
-            <!-- Masaüstü Navigasyon -->
-            <nav id="desktopNav" class="hidden md:flex items-center gap-2">
-                <button onclick="navigateTo('page-home')" class="font-semibold px-3 py-1.5 rounded-lg text-sm transition hover:bg-indigo-700">
-                    <i class="fa-solid fa-house mr-1"></i> Ana Sayfa
-                </button>
-                <button onclick="navigateTo('page-med-list')" class="font-semibold px-3 py-1.5 rounded-lg text-sm transition hover:bg-indigo-700">
-                    <i class="fa-solid fa-pills mr-1"></i> İlaçlarım
-                </button>
-                <button onclick="navigateTo('page-calendar')" class="font-semibold px-3 py-1.5 rounded-lg text-sm transition hover:bg-indigo-700">
-                    <i class="fa-solid fa-calendar-days mr-1"></i> Takvim
-                </button>
-                <button onclick="navigateTo('page-appointments')" class="font-semibold px-3 py-1.5 rounded-lg text-sm transition hover:bg-indigo-700">
-                    <i class="fa-solid fa-user-doctor mr-1"></i> Randevular
-                </button>
-                <button onclick="navigateTo('page-notes')" class="font-semibold px-3 py-1.5 rounded-lg text-sm transition hover:bg-indigo-700">
-                    <i class="fa-solid fa-note-sticky mr-1"></i> Notlarım
-                </button>
-            </nav>
-
-            <!-- Profil / Çıkış Bölümü -->
-            <div id="authSection" class="flex items-center gap-2">
-                <div id="userInfo" class="hidden flex items-center gap-2">
-                    <img id="userPhoto" class="w-8 h-8 rounded-full border-2 border-white shadow cursor-pointer" onclick="navigateTo('page-home')" src="" alt="Profil">
-                    <button id="logoutBtn" title="Çıkış Yap" class="bg-indigo-700 hover:bg-indigo-800 p-2 rounded-lg text-xs transition">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                    </button>
-                </div>
+            <div id="userInfo" onclick="navigateTo('page-profile')" class="hidden flex items-center gap-2 cursor-pointer bg-indigo-700/70 px-2.5 py-1 rounded-full">
+                <img id="userPhoto" src="https://via.placeholder.com/80" alt="Profil" class="w-6 h-6 rounded-full object-cover border border-white/50">
+                <span class="text-[11px] font-semibold">Hesabım</span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 mt-4">
+    <!-- ANA İÇERİK ALANI -->
+    <main class="max-w-xl mx-auto p-4 space-y-4">
 
-        <!-- ================= 0. GİRİŞ / KARŞILAMA EKRANI ================= -->
-        <section id="page-login" class="page-view flex flex-col items-center justify-center min-h-[75vh] text-center space-y-6">
-            <div class="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-5xl shadow-inner border border-indigo-200">
-                <i class="fa-solid fa-prescription-bottle-medical animate-pulse"></i>
-            </div>
-            
-            <div class="space-y-2 max-w-sm">
-                <h2 class="text-2xl font-bold text-slate-800">Sağlık Takipçim'e Hoş Geldiniz</h2>
-                <p class="text-xs text-slate-500">İlaç stoklarınızı, doz saatlerinizi ve doktor randevularınızı tek noktadan güvenle yönetin.</p>
-            </div>
+        <!-- 1. GİRİŞ EKRANI -->
+        <section id="page-login" class="page-view hidden">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 mt-4 text-center space-y-5">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-indigo-200">
+                    <i class="fa-solid fa-heart-pulse text-3xl"></i>
+                </div>
+                <div class="space-y-1">
+                    <h2 class="text-2xl font-extrabold text-slate-800">Rutiva</h2>
+                    <p class="text-xs text-slate-500">İlaç saatlerinizi, stoklarınızı ve doktor randevularınızı bulutta güvenle takip edin.</p>
+                </div>
 
-            <div class="w-full max-w-xs space-y-3 pt-4">
-                <button id="googleLoginMainBtn" onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold py-3.5 px-4 rounded-2xl shadow-sm transition flex items-center justify-center gap-3 text-sm active:scale-95">
-                    <i class="fa-brands fa-google text-red-500 text-lg"></i>
-                    <span>Google ile Giriş Yap</span>
-                </button>
+                <div class="space-y-3 pt-2">
+                    <button onclick="loginWithGoogle()" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-2xl text-sm shadow-md transition flex items-center justify-center gap-2.5">
+                        <i class="fa-brands fa-google text-base"></i>
+                        <span>Google ile Giriş Yap</span>
+                    </button>
 
-                <button onclick="continueAsGuest()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-2xl transition text-xs">
-                    Giriş Yapmadan Devam Et (Yerel Mod)
-                </button>
+                    <button onclick="continueAsGuest()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-2xl text-xs transition">
+                        Giriş Yapmadan Devam Et (Cihaz Hafızası)
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- ================= 1. ANA SAYFA / DASHBOARD ================= -->
-        <section id="page-home" class="page-view space-y-5 hidden">
-            
-            <!-- Profil & Senkronizasyon Durum Kartı -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between gap-4">
-                <div class="flex items-center gap-3.5">
-                    <div class="relative">
-                        <img id="profileAvatar" class="w-14 h-14 rounded-full border-2 border-indigo-200 shadow-sm object-cover" src="https://via.placeholder.com/80?text=Kullan%C4%B1c%C4%B1" alt="Profil">
-                        <span id="onlineDot" class="absolute bottom-0 right-0 bg-emerald-500 w-3.5 h-3.5 rounded-full border-2 border-white"></span>
-                    </div>
-                    <div>
-                        <h2 id="profileName" class="text-lg font-bold text-slate-800">Hoş Geldiniz</h2>
-                        <p id="profileStatus" class="text-xs text-slate-500">Yerel Mod</p>
-                    </div>
+        <!-- 2. ANA SAYFA -->
+        <section id="page-home" class="page-view space-y-4">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl p-4 text-white shadow-sm flex items-center justify-between">
+                <div>
+                    <h2 class="font-bold text-base">Rutiva Günlük Özet</h2>
+                    <p class="text-xs text-indigo-100 mt-0.5">Bugünkü ilaç planınızı tek dokunuşla yönetin.</p>
                 </div>
-                <button onclick="loginWithGoogle()" id="homeLoginBtn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5">
-                    <i class="fa-brands fa-google text-indigo-600"></i> Bağlan
+                <button onclick="navigateTo('page-med-add')" class="bg-white text-indigo-600 font-bold text-xs px-3.5 py-2 rounded-xl shadow-sm">
+                    + İlaç Ekle
                 </button>
             </div>
 
-            <!-- Android Hızlı Erişim Menüsü -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                <div onclick="navigateTo('page-med-list')" class="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white p-4 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition flex flex-col justify-between h-32">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-pills"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold">İlaçlarım</h3>
-                        <p class="text-[11px] opacity-80">Stok & Doz Bildir</p>
-                    </div>
-                </div>
-
-                <div onclick="navigateTo('page-calendar')" class="bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-4 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition flex flex-col justify-between h-32">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-calendar-days"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold">Takvim</h3>
-                        <p class="text-[11px] opacity-80">İçilen / Atlanan</p>
-                    </div>
-                </div>
-
-                <div onclick="navigateTo('page-appointments')" class="bg-gradient-to-br from-sky-500 to-blue-700 text-white p-4 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition flex flex-col justify-between h-32">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-user-doctor"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold">Randevular</h3>
-                        <p class="text-[11px] opacity-80">Muayene Takibi</p>
-                    </div>
-                </div>
-
-                <div onclick="navigateTo('page-notes')" class="bg-gradient-to-br from-amber-500 to-orange-600 text-white p-4 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition flex flex-col justify-between h-32">
-                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-note-sticky"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold">Not Defteri</h3>
-                        <p class="text-[11px] opacity-80">Başlıklı Notlar</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Özet İlaç Durum Kartı -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Bugünkü İlaç Özetim
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-pills text-indigo-600"></i> Bugünkü İlaçlarım
                     </h3>
-                    <button onclick="navigateTo('page-med-add')" class="text-xs text-indigo-600 font-semibold hover:underline">
-                        + Yeni İlaç
-                    </button>
+                    <button onclick="navigateTo('page-med-list')" class="text-xs text-indigo-600 font-semibold">Tümünü Gör</button>
                 </div>
                 <div id="homeTodayMeds" class="space-y-2"></div>
             </div>
 
-        </section>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="navigateTo('page-apps')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-left hover:border-indigo-300 transition space-y-1.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div class="font-bold text-xs text-slate-800">Muayene Takvimi</div>
+                    <div class="text-[11px] text-slate-400">Randevu ekle & takip et</div>
+                </button>
 
-        <!-- ================= 2. İLAÇLARIM VE STOK SAYFASI ================= -->
-        <section id="page-med-list" class="page-view space-y-4 hidden">
-            <div class="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-capsules text-indigo-600"></i> İlaç Stok & Doz Bildirimi
-                </h2>
-                <button onclick="navigateTo('page-med-add')" class="text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-xl transition flex items-center gap-1">
-                    <i class="fa-solid fa-plus"></i> İlaç Ekle
+                <button onclick="navigateTo('page-notes')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-left hover:border-indigo-300 transition space-y-1.5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                        <i class="fa-solid fa-note-sticky"></i>
+                    </div>
+                    <div class="font-bold text-xs text-slate-800">Sağlık Notlarım</div>
+                    <div class="text-[11px] text-slate-400">Tahlil & doktor notları</div>
                 </button>
             </div>
-            <div id="medsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
-        <!-- ================= 3. YENİ İLAÇ EKLE SAYFASI ================= -->
-        <section id="page-med-add" class="page-view space-y-4 hidden">
-            <div class="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-plus-circle text-indigo-600"></i> Yeni İlaç Kaydı
-                </h2>
-                <button onclick="navigateTo('page-med-list')" class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">Geri</button>
+        <!-- 3. İLAÇ LİSTESİ -->
+        <section id="page-med-list" class="page-view hidden space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="font-bold text-slate-800 text-base">İlaçlarım ve Stoklar</h2>
+                <button onclick="navigateTo('page-med-add')" class="bg-indigo-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-sm">
+                    + Yeni İlaç
+                </button>
+            </div>
+            <div id="medsList" class="grid grid-cols-1 gap-3"></div>
+        </section>
+
+        <!-- 4. YENİ İLAÇ EKLE -->
+        <section id="page-med-add" class="page-view hidden space-y-4">
+            <div class="flex items-center gap-2">
+                <button onclick="navigateTo('page-med-list')" class="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                </button>
+                <h2 class="font-bold text-slate-800 text-base">Yeni İlaç Ekle</h2>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <form id="medForm" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">İlaç Adı</label>
-                            <input type="text" id="medName" required placeholder="Örn: Parol 500mg" class="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Toplam Kutu / Tablet Sayısı (Stok)</label>
-                            <input type="number" id="medTotal" required min="1" placeholder="Örn: 30" class="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                    </div>
+            <form id="medForm" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">İlaç Adı *</label>
+                    <input type="text" id="medName" required placeholder="Örn: Parol 500 mg" class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Günde Kaç Adet Alınacak?</label>
-                            <input type="number" id="medDailyDose" required min="1" value="1" class="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Hatırlatma Saati</label>
-                            <input type="time" id="medTime" required class="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Kullanım Amacı / Not</label>
-                            <input type="text" id="medUsage" placeholder="Örn: Tok karna" class="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                        </div>
-                    </div>
-
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">İlaç Etkileri ve Yan Etkileri</label>
-                        <textarea id="medSideEffects" rows="3" placeholder="Örn: Mide hassasiyeti yapabilir." class="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                        <label class="block font-semibold text-slate-700 mb-1">Kutu Tablet Sayısı *</label>
+                        <input type="number" id="medTotal" min="1" required placeholder="Örn: 20" class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
                     </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Günlük Doz *</label>
+                        <input type="number" id="medDailyDose" min="1" value="1" required class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md">
-                        İlacı Kaydet
-                    </button>
-                </form>
-            </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Hatırlatma Saati *</label>
+                    <input type="time" id="medTime" required class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Kullanım Şekli</label>
+                    <input type="text" id="medUsage" placeholder="Örn: Sabah tok karnına 1 tablet" class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Yan Etkiler / Uyarılar</label>
+                    <textarea id="medSideEffects" rows="2" placeholder="Varsa önemli yan etkileri yazın..." class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs shadow-sm transition">
+                    İlacı Kaydet
+                </button>
+            </form>
         </section>
 
-        <!-- ================= 4. TAKVİM SAYFASI ================= -->
-        <section id="page-calendar" class="page-view space-y-4 hidden">
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-calendar-days text-indigo-600"></i> İlaç Takip Takvimi
-                </h2>
-                <div class="flex items-center gap-3 text-xs">
-                    <span class="flex items-center gap-1 font-semibold text-emerald-700"><span class="w-3 h-3 bg-emerald-500 rounded-full inline-block"></span> İçildi</span>
-                    <span class="flex items-center gap-1 font-semibold text-rose-700"><span class="w-3 h-3 bg-rose-500 rounded-full inline-block"></span> Atlandı</span>
-                </div>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 id="calendarMonthYear" class="font-bold text-slate-800 text-md"></h3>
-                    <div class="flex gap-2">
-                        <button onclick="changeMonth(-1)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button onclick="changeMonth(1)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
+        <!-- 5. TAKVİM -->
+        <section id="page-calendar" class="page-view hidden space-y-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <h2 id="calendarMonthYear" class="font-bold text-slate-800 text-sm"></h2>
+                    <button onclick="changeMonth(1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
                 </div>
 
-                <div class="grid grid-cols-7 text-center font-bold text-xs text-slate-400 pb-2 border-b">
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400">
                     <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
                 </div>
 
-                <div id="calendarGrid" class="grid grid-cols-7 gap-1.5 text-center"></div>
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1.5"></div>
+
+                <div class="flex items-center justify-center gap-4 pt-2 border-t text-[11px] text-slate-500">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-200 inline-block"></span> İçildi</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-200 inline-block"></span> Atlandı</span>
+                </div>
             </div>
         </section>
 
-        <!-- ================= 5. MUAYENE & RANDEVU SAYFASI ================= -->
-        <section id="page-appointments" class="page-view space-y-4 hidden">
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-user-doctor text-indigo-600"></i> Muayene Randevusu Ekle
-                </h2>
-                <form id="appForm" class="space-y-3.5">
+        <!-- 6. MUAYENE & RANDEVU -->
+        <section id="page-apps" class="page-view hidden space-y-4">
+            <h2 class="font-bold text-slate-800 text-base">Doktor Randevuları</h2>
+
+            <form id="appForm" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Bölüm / Doktor Adı *</label>
+                    <input type="text" id="appName" required placeholder="Örn: Dahiliye Kontrolü" class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Doktor / Hastane Adı</label>
-                        <input type="text" id="appName" required placeholder="Örn: Dr. Ahmet Yılmaz - Dahiliye" class="w-full p-3 border border-slate-300 rounded-xl text-sm outline-none">
+                        <label class="block font-semibold text-slate-700 mb-1">Tarih ve Saat *</label>
+                        <input type="datetime-local" id="appDate" required class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
                     </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Randevu Tarihi ve Saati</label>
-                            <input type="datetime-local" id="appDate" required class="w-full p-3 border border-slate-300 rounded-xl text-sm outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Periyodik Kontrol Düzeni</label>
-                            <select id="appPeriod" class="w-full p-3 border border-slate-300 rounded-xl text-sm bg-white outline-none">
-                                <option value="0">Tek Seferlik Randevu</option>
-                                <option value="1">Her 1 Ayda Bir</option>
-                                <option value="2">Her 2 Ayda Bir</option>
-                                <option value="3">Her 3 Ayda Bir</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tekrar Periyodu</label>
+                        <select id="appPeriod" class="w-full border border-slate-200 rounded-xl p-2.5 bg-white focus:outline-none focus:border-indigo-500">
+                            <option value="0">Tek Seferlik</option>
+                            <option value="1">Her 1 Ayda Bir</option>
+                            <option value="3">Her 3 Ayda Bir</option>
+                            <option value="6">Her 6 Ayda Bir</option>
+                            <option value="12">Yıllık Kontrol</option>
+                        </select>
                     </div>
+                </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-sm shadow-md">
-                        Randevu Kaydet
-                    </button>
-                </form>
-            </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition">
+                    Randevu Ekle
+                </button>
+            </form>
 
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <h3 class="font-bold text-slate-800 text-sm mb-3">Yaklaşan Randevular</h3>
-                <div id="appsList" class="space-y-2.5"></div>
-            </div>
+            <div id="appsList" class="space-y-2.5"></div>
         </section>
 
-        <!-- ================= 6. NOT DEFTERİ SAYFASI ================= -->
-        <section id="page-notes" class="page-view space-y-4 hidden">
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-note-sticky text-amber-500"></i> Yeni Not Ekle
-                </h2>
-                <form id="noteForm" class="space-y-3">
-                    <div>
-                        <input type="text" id="noteTitle" required placeholder="Not Başlığı" class="w-full p-3 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500">
-                    </div>
-                    <div>
-                        <textarea id="noteContent" rows="3" required placeholder="Not İçeriği..." class="w-full p-3 border border-slate-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500"></textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm shadow-md transition">
-                        Notu Kaydet
-                    </button>
-                </form>
-            </div>
+        <!-- 7. NOTLAR -->
+        <section id="page-notes" class="page-view hidden space-y-4">
+            <h2 class="font-bold text-slate-800 text-base">Sağlık Notlarım</h2>
 
-            <div class="space-y-3">
-                <h3 class="font-bold text-slate-800 text-sm">Kayıtlı Notlarım</h3>
-                <div id="notesList" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
+            <form id="noteForm" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Başlık *</label>
+                    <input type="text" id="noteTitle" required placeholder="Örn: Kan Tahlili Sonucu" class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Not İçeriği *</label>
+                    <textarea id="noteContent" rows="3" required placeholder="Notunuzu buraya yazın..." class="w-full border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs transition">
+                    Notu Kaydet
+                </button>
+            </form>
+
+            <div id="notesList" class="grid grid-cols-1 gap-3"></div>
+        </section>
+
+        <!-- 8. PROFİL -->
+        <section id="page-profile" class="page-view hidden space-y-4">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center space-y-3">
+                <img id="profileAvatar" src="https://via.placeholder.com/80?text=Kullan%C4%B1c%C4%B1" alt="Profil" class="w-20 h-20 rounded-full mx-auto object-cover border-2 border-indigo-500">
+                <div>
+                    <h2 id="profileName" class="font-bold text-slate-800 text-base">Hoş Geldiniz</h2>
+                    <p id="profileStatus" class="text-xs text-slate-500 mt-0.5">Yerel Mod (Cihaz Hafızası)</p>
+                </div>
+
+                <div class="pt-3 space-y-2">
+                    <button onclick="loginWithGoogle()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-google"></i> Google Hesabı Bağla / Değiştir
+                    </button>
+                    <button id="logoutBtn" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-3 rounded-xl text-xs">
+                        Çıkış Yap
+                    </button>
+                </div>
             </div>
         </section>
 
     </main>
 
-    <!-- ANDROID MOBİL ALT NAVİGASYON BARI -->
-    <nav id="mobileBottomNav" class="hidden md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pt-2 px-3 z-40 flex justify-around items-center shadow-lg safe-bottom-nav">
-        <button onclick="navigateTo('page-home')" class="mobile-nav-btn text-indigo-600 flex flex-col items-center gap-1">
-            <i class="fa-solid fa-house text-lg"></i>
-            <span class="text-[10px] font-semibold">Ana Sayfa</span>
+    <!-- ALT GEZİNME ÇUBUĞU -->
+    <nav id="mobileBottomNav" class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 px-2 py-2 flex justify-around items-center z-30">
+        <button onclick="navigateTo('page-home')" class="mobile-nav-btn active text-indigo-600 flex flex-col items-center gap-0.5 text-[10px] font-semibold">
+            <i class="fa-solid fa-house text-base"></i>
+            <span>Özet</span>
         </button>
-        <button onclick="navigateTo('page-med-list')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-1">
-            <i class="fa-solid fa-pills text-lg"></i>
-            <span class="text-[10px] font-semibold">İlaçlarım</span>
+        <button onclick="navigateTo('page-med-list')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-0.5 text-[10px] font-semibold">
+            <i class="fa-solid fa-pills text-base"></i>
+            <span>İlaçlar</span>
         </button>
-        <button onclick="navigateTo('page-calendar')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-1">
-            <i class="fa-solid fa-calendar-days text-lg"></i>
-            <span class="text-[10px] font-semibold">Takvim</span>
+        <button onclick="navigateTo('page-calendar')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-0.5 text-[10px] font-semibold">
+            <i class="fa-solid fa-calendar-days text-base"></i>
+            <span>Takvim</span>
         </button>
-        <button onclick="navigateTo('page-appointments')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-1">
-            <i class="fa-solid fa-user-doctor text-lg"></i>
-            <span class="text-[10px] font-semibold">Randevu</span>
+        <button onclick="navigateTo('page-apps')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-0.5 text-[10px] font-semibold">
+            <i class="fa-solid fa-stethoscope text-base"></i>
+            <span>Randevu</span>
         </button>
-        <button onclick="navigateTo('page-notes')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-1">
-            <i class="fa-solid fa-note-sticky text-lg"></i>
-            <span class="text-[10px] font-semibold">Notlar</span>
+        <button onclick="navigateTo('page-profile')" class="mobile-nav-btn text-slate-400 flex flex-col items-center gap-0.5 text-[10px] font-semibold">
+            <i class="fa-solid fa-user text-base"></i>
+            <span>Profil</span>
         </button>
     </nav>
 
-    <!-- ALARM POPUP MODAL -->
-    <div id="alarmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl text-center space-y-4 border-2 border-indigo-500">
-            <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-2xl">
-                <i class="fa-solid fa-bell animate-bounce"></i>
+    <!-- ALARM MODALI -->
+    <div id="alarmModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
+            <div class="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto animate-bounce">
+                <i class="fa-solid fa-bell text-2xl"></i>
             </div>
             <div>
-                <h3 class="text-lg font-bold text-slate-900">İlaç Zamanı Geldi!</h3>
-                <p id="alarmMedName" class="text-base font-semibold text-indigo-600 mt-1"></p>
+                <h3 class="font-extrabold text-slate-800 text-lg">İlaç Saati Geldi!</h3>
+                <p id="alarmMedName" class="font-bold text-indigo-600 text-base mt-1"></p>
                 <p id="alarmMedUsage" class="text-xs text-slate-500 mt-1"></p>
             </div>
-            <div class="flex gap-2.5">
-                <button id="snoozeBtn" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl text-xs">15 Dk Ertele</button>
-                <button id="takePillBtn" class="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs shadow-md">İlacı Aldım</button>
+            <div class="flex gap-2 pt-2">
+                <button id="snoozeBtn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs">
+                    15 Dk Ertele
+                </button>
+                <button id="takePillBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs">
+                    İçtim
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- İLAÇ DETAY VE YAN ETKİ MODALI -->
-    <div id="detailModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div class="flex justify-between items-center border-b pb-3">
-                <h3 id="detailTitle" class="text-base font-bold text-slate-800"></h3>
-                <button id="closeDetailIconBtn" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
+    <!-- DETAY MODALI -->
+    <div id="detailModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-5 space-y-3 shadow-xl text-xs">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 id="detailTitle" class="font-bold text-slate-800 text-sm">İlaç Detayları</h3>
+                <button id="closeDetailIconBtn" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
             </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <span class="font-semibold text-slate-700 block">Kullanım Talimatı:</span>
-                    <p id="detailUsage" class="text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 mt-1"></p>
-                </div>
-                <div>
-                    <span class="font-semibold text-slate-700 block">Yan Etkiler & Detay:</span>
-                    <p id="detailEffects" class="text-slate-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-1 text-amber-900"></p>
-                </div>
+            <div>
+                <span class="font-bold text-slate-700">Kullanım Şekli:</span>
+                <p id="detailUsage" class="text-slate-600 mt-0.5"></p>
             </div>
-            <button id="closeDetailBtn" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs">Kapat</button>
+            <div>
+                <span class="font-bold text-slate-700">Yan Etkiler:</span>
+                <p id="detailEffects" class="text-slate-600 mt-0.5"></p>
+            </div>
+            <button id="closeDetailBtn" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl mt-2">
+                Kapat
+            </button>
         </div>
     </div>
 
-    <!-- Uygulama JavaScript Dosyası -->
+    <!-- FIREBASE SDK (COMPAT) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
