@@ -24,8 +24,9 @@ jobs:
           cp *.html *.css *.js www/ 2>/dev/null || true
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/status-bar@6 @codetrix-studio/capacitor-google-auth --legacy-peer-deps
-          node -e 'const fs = require("fs"); fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.saglik.takip", appName: "Sağlık Takipçim", webDir: "www", plugins: { StatusBar: { overlaysWebView: false, style: "DARK", backgroundColor: "#4f46e5" }, GoogleAuth: { scopes: ["profile", "email"], serverClientId: "270075251216-h45ek67k1cr9m0lctbplq4lssc6vb30u.apps.googleusercontent.com", clientId: "270075251216-h45ek67k1cr9m0lctbplq4lssc6vb30u.apps.googleusercontent.com", forceCodeForRefreshToken: true } } }, null, 2));'
+          node -e 'const fs = require("fs"); fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.saglik.takip", appName: "Sağlık Takipçim", webDir: "www", plugins: { StatusBar: { overlaysWebView: false, style: "DARK", backgroundColor: "#4f46e5" }, GoogleAuth: { scopes: ["profile", "email"], serverClientId: "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com", clientId: "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com", forceCodeForRefreshToken: true } } }, null, 2));'
           npx cap add android
+          if [ -f google-services.json ]; then cp google-services.json android/app/google-services.json; fi
           npx cap sync android
 
       - name: Java 17 Kurulumu
