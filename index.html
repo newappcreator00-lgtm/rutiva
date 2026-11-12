@@ -20,10 +20,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen pb-24 md:pb-12 select-none">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-28 md:pb-12 select-none">
 
-    <!-- Header / Üst Bar -->
-    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-30">
+    <!-- Header / Üst Bar (Bildirim Çubuğu Boşluğu Ayarlı) -->
+    <header id="appHeader" class="bg-indigo-600 text-white shadow-md sticky top-0 z-30 safe-top-header">
         <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
             <button onclick="navigateTo('page-home')" class="flex items-center gap-2.5 hover:opacity-90 transition">
                 <i class="fa-solid fa-prescription-bottle-medical text-2xl"></i>
@@ -31,7 +31,7 @@
             </button>
             
             <!-- Masaüstü Navigasyon -->
-            <nav class="hidden md:flex items-center gap-2">
+            <nav id="desktopNav" class="hidden md:flex items-center gap-2">
                 <button onclick="navigateTo('page-home')" class="font-semibold px-3 py-1.5 rounded-lg text-sm transition hover:bg-indigo-700">
                     <i class="fa-solid fa-house mr-1"></i> Ana Sayfa
                 </button>
@@ -49,12 +49,8 @@
                 </button>
             </nav>
 
-            <!-- Google Giriş Bölümü -->
+            <!-- Profil / Çıkış Bölümü -->
             <div id="authSection" class="flex items-center gap-2">
-                <button id="loginBtn" class="bg-white text-indigo-600 hover:bg-slate-100 font-semibold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm">
-                    <i class="fa-brands fa-google"></i>
-                    <span>Giriş</span>
-                </button>
                 <div id="userInfo" class="hidden flex items-center gap-2">
                     <img id="userPhoto" class="w-8 h-8 rounded-full border-2 border-white shadow cursor-pointer" onclick="navigateTo('page-home')" src="" alt="Profil">
                     <button id="logoutBtn" title="Çıkış Yap" class="bg-indigo-700 hover:bg-indigo-800 p-2 rounded-lg text-xs transition">
@@ -67,29 +63,51 @@
 
     <main class="max-w-5xl mx-auto px-4 mt-4">
 
+        <!-- ================= 0. GİRİŞ / KARŞILAMA EKRANI ================= -->
+        <section id="page-login" class="page-view flex flex-col items-center justify-center min-h-[75vh] text-center space-y-6">
+            <div class="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center text-5xl shadow-inner border border-indigo-200">
+                <i class="fa-solid fa-prescription-bottle-medical animate-pulse"></i>
+            </div>
+            
+            <div class="space-y-2 max-w-sm">
+                <h2 class="text-2xl font-bold text-slate-800">Sağlık Takipçim'e Hoş Geldiniz</h2>
+                <p class="text-xs text-slate-500">İlaç stoklarınızı, doz saatlerinizi ve doktor randevularınızı tek noktadan güvenle yönetin.</p>
+            </div>
+
+            <div class="w-full max-w-xs space-y-3 pt-4">
+                <button id="googleLoginMainBtn" onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold py-3.5 px-4 rounded-2xl shadow-sm transition flex items-center justify-center gap-3 text-sm active:scale-95">
+                    <i class="fa-brands fa-google text-red-500 text-lg"></i>
+                    <span>Google ile Giriş Yap</span>
+                </button>
+
+                <button onclick="continueAsGuest()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-2xl transition text-xs">
+                    Giriş Yapmadan Devam Et (Yerel Mod)
+                </button>
+            </div>
+        </section>
+
         <!-- ================= 1. ANA SAYFA / DASHBOARD ================= -->
-        <section id="page-home" class="page-view space-y-5">
+        <section id="page-home" class="page-view space-y-5 hidden">
             
             <!-- Profil & Senkronizasyon Durum Kartı -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3.5">
                     <div class="relative">
                         <img id="profileAvatar" class="w-14 h-14 rounded-full border-2 border-indigo-200 shadow-sm object-cover" src="https://via.placeholder.com/80?text=Kullan%C4%B1c%C4%B1" alt="Profil">
-                        <span class="absolute bottom-0 right-0 bg-emerald-500 w-3.5 h-3.5 rounded-full border-2 border-white"></span>
+                        <span id="onlineDot" class="absolute bottom-0 right-0 bg-emerald-500 w-3.5 h-3.5 rounded-full border-2 border-white"></span>
                     </div>
                     <div>
                         <h2 id="profileName" class="text-lg font-bold text-slate-800">Hoş Geldiniz</h2>
-                        <p id="profileStatus" class="text-xs text-slate-500">Yerel Mod (Google Senkronizasyonu Kapalı)</p>
+                        <p id="profileStatus" class="text-xs text-slate-500">Yerel Mod</p>
                     </div>
                 </div>
                 <button onclick="loginWithGoogle()" id="homeLoginBtn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5">
-                    <i class="fa-brands fa-google text-indigo-600"></i> Bağla
+                    <i class="fa-brands fa-google text-indigo-600"></i> Bağlan
                 </button>
             </div>
 
             <!-- Android Hızlı Erişim Menüsü -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                
                 <div onclick="navigateTo('page-med-list')" class="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white p-4 rounded-2xl shadow-sm cursor-pointer active:scale-95 transition flex flex-col justify-between h-32">
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">
                         <i class="fa-solid fa-pills"></i>
@@ -129,7 +147,6 @@
                         <p class="text-[11px] opacity-80">Başlıklı Notlar</p>
                     </div>
                 </div>
-
             </div>
 
             <!-- Özet İlaç Durum Kartı -->
@@ -142,9 +159,7 @@
                         + Yeni İlaç
                     </button>
                 </div>
-                <div id="homeTodayMeds" class="space-y-2">
-                    <!-- Dinamik İçerik -->
-                </div>
+                <div id="homeTodayMeds" class="space-y-2"></div>
             </div>
 
         </section>
@@ -159,10 +174,7 @@
                     <i class="fa-solid fa-plus"></i> İlaç Ekle
                 </button>
             </div>
-
-            <div id="medsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- JS Dinamik Kartlar -->
-            </div>
+            <div id="medsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
         <!-- ================= 3. YENİ İLAÇ EKLE SAYFASI ================= -->
@@ -171,9 +183,7 @@
                 <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
                     <i class="fa-solid fa-plus-circle text-indigo-600"></i> Yeni İlaç Kaydı
                 </h2>
-                <button onclick="navigateTo('page-med-list')" class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
-                    Geri
-                </button>
+                <button onclick="navigateTo('page-med-list')" class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">Geri</button>
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -285,7 +295,7 @@
             </div>
         </section>
 
-        <!-- ================= 6. NOT DEFTORİ SAYFASI ================= -->
+        <!-- ================= 6. NOT DEFTERİ SAYFASI ================= -->
         <section id="page-notes" class="page-view space-y-4 hidden">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                 <h2 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -313,7 +323,7 @@
     </main>
 
     <!-- ANDROID MOBİL ALT NAVİGASYON BARI -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-2 px-3 z-40 flex justify-around items-center shadow-lg">
+    <nav id="mobileBottomNav" class="hidden md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pt-2 px-3 z-40 flex justify-around items-center shadow-lg safe-bottom-nav">
         <button onclick="navigateTo('page-home')" class="mobile-nav-btn text-indigo-600 flex flex-col items-center gap-1">
             <i class="fa-solid fa-house text-lg"></i>
             <span class="text-[10px] font-semibold">Ana Sayfa</span>
@@ -348,12 +358,8 @@
                 <p id="alarmMedUsage" class="text-xs text-slate-500 mt-1"></p>
             </div>
             <div class="flex gap-2.5">
-                <button id="snoozeBtn" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl text-xs">
-                    15 Dk Ertele
-                </button>
-                <button id="takePillBtn" class="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs shadow-md">
-                    İlacı Aldım
-                </button>
+                <button id="snoozeBtn" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl text-xs">15 Dk Ertele</button>
+                <button id="takePillBtn" class="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs shadow-md">İlacı Aldım</button>
             </div>
         </div>
     </div>
@@ -363,9 +369,7 @@
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
                 <h3 id="detailTitle" class="text-base font-bold text-slate-800"></h3>
-                <button id="closeDetailIconBtn" class="text-slate-400 hover:text-slate-600 text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <button id="closeDetailIconBtn" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
@@ -377,9 +381,7 @@
                     <p id="detailEffects" class="text-slate-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-1 text-amber-900"></p>
                 </div>
             </div>
-            <button id="closeDetailBtn" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs">
-                Kapat
-            </button>
+            <button id="closeDetailBtn" class="w-full bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs">Kapat</button>
         </div>
     </div>
 
