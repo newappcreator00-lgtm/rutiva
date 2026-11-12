@@ -9,8 +9,8 @@ const firebaseConfig = {
     measurementId: "G-TTN7GS1SZ6"
 };
 
-// Firebase Console -> ilacstoktakip -> Authentication -> Google -> Web SDK configuration içindeki Web Client ID:
-const GOOGLE_WEB_CLIENT_ID = "BURAYA_ILACSTOKTAKIP_WEB_CLIENT_ID_YAPISTIRIN";
+// Google Cloud Web Client ID:
+const GOOGLE_WEB_CLIENT_ID = "270075251216-h45ek67k1cr9m0lctbplq4lssc6vb30u.apps.googleusercontent.com";
 
 let currentUser = null;
 let db = null;
