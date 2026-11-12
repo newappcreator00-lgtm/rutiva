@@ -26,8 +26,23 @@ jobs:
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/status-bar@6 @codetrix-studio/capacitor-google-auth --legacy-peer-deps
           node -e 'const fs = require("fs"); fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.saglik.takip", appName: "Sağlık Takipçim", webDir: "www", plugins: { StatusBar: { overlaysWebView: false, style: "DARK", backgroundColor: "#4f46e5" }, GoogleAuth: { scopes: ["profile", "email"], serverClientId: "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com", clientId: "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com", forceCodeForRefreshToken: true } } }, null, 2));'
           npx cap add android
-          if [ -f google-services.json ]; then cp google-services.json android/app/google-services.json; fi
+          if [ -f google-services.json ]; then
+            cp google-services.json android/app/google-services.json
+            echo "google-services.json kopyalandi."
+          else
+            echo "UYARI: google-services.json ana dizinde bulunamadi!"
+          fi
           npx cap sync android
+          node -e '
+            const fs = require("fs");
+            const p = "android/app/src/main/res/values/strings.xml";
+            let xml = fs.readFileSync(p, "utf8");
+            const clientId = "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com";
+            if (!xml.includes("server_client_id")) {
+              xml = xml.replace("</resources>", `    <string name="server_client_id">${clientId}</string>\n</resources>`);
+              fs.writeFileSync(p, xml);
+            }
+          '
 
       - name: Java 17 Kurulumu
         uses: actions/setup-java@v4
@@ -40,9 +55,11 @@ jobs:
           mkdir -p ~/.android
           if [ -f debug.keystore ]; then
             cp debug.keystore ~/.android/debug.keystore
+            echo "Mevcut debug.keystore kullanildi."
           else
             keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
             cp ~/.android/debug.keystore ./debug.keystore
+            echo "Yeni debug.keystore olusturuldu."
           fi
           echo "=== FIREBASE ICIN SHA-1 PARMAK IZI ==="
           keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1
