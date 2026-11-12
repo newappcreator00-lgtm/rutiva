@@ -9,8 +9,8 @@ const firebaseConfig = {
     measurementId: "G-TTN7GS1SZ6"
 };
 
-// Google Cloud Web Client ID:
-const GOOGLE_WEB_CLIENT_ID = "270075251216-h45ek67k1cr9m0lctbplq4lssc6vb30u.apps.googleusercontent.com";
+// Firebase (ilacstoktakip) Web Client ID:
+const GOOGLE_WEB_CLIENT_ID = "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com";
 
 let currentUser = null;
 let db = null;
@@ -174,7 +174,7 @@ window.loginWithGoogle = async function() {
         return;
     }
 
-    // 1. Android APK içinde çalışıyorsa telefonun yerel Google hesap seçicisini aç (localhost hatasını önler)
+    // 1. Android APK içinde çalışıyorsa telefonun yerel Google hesap seçicisini aç
     if (isNativeAndroid()) {
         const GoogleAuth = window.Capacitor.Plugins?.GoogleAuth;
         if (!GoogleAuth) {
@@ -185,7 +185,7 @@ window.loginWithGoogle = async function() {
             const googleUser = await GoogleAuth.signIn();
             const idToken = googleUser.authentication?.idToken || googleUser.idToken;
             if (!idToken) {
-                alert("Google kimlik belirteci (idToken) alınamadı. Web Client ID ayarını kontrol edin.");
+                alert("Google kimlik belirteci (idToken) alınamadı.");
                 return;
             }
             const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
