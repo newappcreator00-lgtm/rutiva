@@ -20,26 +20,28 @@ jobs:
 
       - name: Web Dosyalarını Hazırla ve Capacitor Kur
         run: |
+          export CLIENT_ID="1061356505510-bu8fks3id3vnitjebte8469ma1p2ha7l.apps.googleusercontent.com"
           mkdir -p www
           cp *.html *.css *.js www/ 2>/dev/null || true
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/status-bar@6 @codetrix-studio/capacitor-google-auth --legacy-peer-deps
-          node -e 'const fs = require("fs"); fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.saglik.takip", appName: "Sağlık Takipçim", webDir: "www", plugins: { StatusBar: { overlaysWebView: false, style: "DARK", backgroundColor: "#4f46e5" }, GoogleAuth: { scopes: ["profile", "email"], serverClientId: "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com", clientId: "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com", forceCodeForRefreshToken: true } } }, null, 2));'
+          node -e 'const fs = require("fs"); const cid = process.env.CLIENT_ID; fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.rutiva.app", appName: "Rutiva", webDir: "www", plugins: { StatusBar: { overlaysWebView: false, style: "DARK", backgroundColor: "#4f46e5" }, GoogleAuth: { scopes: ["profile", "email"], serverClientId: cid, forceCodeForRefreshToken: true } } }, null, 2));'
           npx cap add android
           if [ -f google-services.json ]; then
             cp google-services.json android/app/google-services.json
-            echo "google-services.json kopyalandi."
+            echo "google-services.json basariyla kopyalandi."
           else
-            echo "UYARI: google-services.json ana dizinde bulunamadi!"
+            echo "HATA: google-services.json ana dizinde bulunamadi!"
+            exit 1
           fi
           npx cap sync android
           node -e '
             const fs = require("fs");
             const p = "android/app/src/main/res/values/strings.xml";
             let xml = fs.readFileSync(p, "utf8");
-            const clientId = "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com";
+            const cid = process.env.CLIENT_ID;
             if (!xml.includes("server_client_id")) {
-              xml = xml.replace("</resources>", `    <string name="server_client_id">${clientId}</string>\n</resources>`);
+              xml = xml.replace("</resources>", `    <string name="server_client_id">${cid}</string>\n</resources>`);
               fs.writeFileSync(p, xml);
             }
           '
@@ -73,7 +75,7 @@ jobs:
       - name: APK ve Keystore Dosyalarını Yükle
         uses: actions/upload-artifact@v4
         with:
-          name: SaglikTakipcim-Android-APK
+          name: Rutiva-Android-APK
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             debug.keystore
