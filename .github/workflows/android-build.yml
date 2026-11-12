@@ -21,19 +21,29 @@ jobs:
       - name: Web Dosyalarını Hazırla ve Capacitor Kur
         run: |
           export CLIENT_ID="1061356505510-bu8fks3id3vnitjebte8469ma1p2ha7l.apps.googleusercontent.com"
+          node -e '
+            const fs = require("fs");
+            if (!fs.existsSync("google-services.json")) {
+              console.error("HATA: google-services.json ana dizinde yok!");
+              process.exit(1);
+            }
+            const gs = JSON.parse(fs.readFileSync("google-services.json", "utf8"));
+            const c = gs.client?.[0];
+            const pkg = c?.client_info?.android_client_info?.package_name;
+            const oauth = c?.oauth_client || [];
+            console.log("Paket:", pkg, "| OAuth sayisi:", oauth.length);
+            if (pkg !== "com.rutiva.app" || oauth.length < 2) {
+              console.error("HATA: google-services.json icinde SHA-1 veya Web Client eksik! Firebase uzerinden guncel dosyayi indirip yukleyin.");
+              process.exit(1);
+            }
+          '
           mkdir -p www
           cp *.html *.css *.js www/ 2>/dev/null || true
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/status-bar@6 @codetrix-studio/capacitor-google-auth --legacy-peer-deps
           node -e 'const fs = require("fs"); const cid = process.env.CLIENT_ID; fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.rutiva.app", appName: "Rutiva", webDir: "www", plugins: { StatusBar: { overlaysWebView: false, style: "DARK", backgroundColor: "#4f46e5" }, GoogleAuth: { scopes: ["profile", "email"], serverClientId: cid, forceCodeForRefreshToken: true } } }, null, 2));'
           npx cap add android
-          if [ -f google-services.json ]; then
-            cp google-services.json android/app/google-services.json
-            echo "google-services.json basariyla kopyalandi."
-          else
-            echo "HATA: google-services.json ana dizinde bulunamadi!"
-            exit 1
-          fi
+          cp google-services.json android/app/google-services.json
           npx cap sync android
           node -e '
             const fs = require("fs");
@@ -43,6 +53,12 @@ jobs:
             if (!xml.includes("server_client_id")) {
               xml = xml.replace("</resources>", `    <string name="server_client_id">${cid}</string>\n</resources>`);
               fs.writeFileSync(p, xml);
+            }
+            let bg = fs.readFileSync("android/app/build.gradle", "utf8");
+            if (!bg.includes("signingConfigs")) {
+              const signBlock = "    signingConfigs {\n        debug {\n            storeFile file(\"../../debug.keystore\")\n            storePassword \"android\"\n            keyAlias \"androiddebugkey\"\n            keyPassword \"android\"\n        }\n    }\n\n    buildTypes {\n        debug {\n            signingConfig signingConfigs.debug\n        }";
+              bg = bg.replace("    buildTypes {", signBlock);
+              fs.writeFileSync("android/app/build.gradle", bg);
             }
           '
 
@@ -55,22 +71,17 @@ jobs:
       - name: Keystore ve SHA-1 Kontrolü
         run: |
           mkdir -p ~/.android
-          if [ -f debug.keystore ]; then
-            cp debug.keystore ~/.android/debug.keystore
-            echo "Mevcut debug.keystore kullanildi."
-          else
-            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            cp ~/.android/debug.keystore ./debug.keystore
-            echo "Yeni debug.keystore olusturuldu."
-          fi
-          echo "=== FIREBASE ICIN SHA-1 PARMAK IZI ==="
-          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1
+          cp debug.keystore ~/.android/debug.keystore
+          echo "=== KEYSTORE SHA-1 ==="
+          keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1
 
       - name: APK Derleme (Gradle)
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+          echo "=== APK IMZA SHA-1 ==="
+          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk | grep SHA1
 
       - name: APK Dosyasını Yükle
         uses: actions/upload-artifact@v4
