@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1061356505510",
+    "project_id": "rutiva-db",
+    "storage_bucket": "rutiva-db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1061356505510:android:ff47060bd839e79c14a767",
+        "android_client_info": {
+          "package_name": "com.rutiva.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1061356505510-590f88n4o95gb1ceauo8nmq5ivm3vjjt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutiva.app",
+            "certificate_hash": "24c412126c7e0255d545f40182114f50891b21c6"
+          }
+        },
+        {
+          "client_id": "1061356505510-bu8fks3id3vnitjebte8469ma1p2ha7l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuhyglLMfokEkl8t26HeadJB-_QBqsOrI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1061356505510-bu8fks3id3vnitjebte8469ma1p2ha7l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
