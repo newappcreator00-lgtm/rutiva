@@ -23,8 +23,25 @@ jobs:
           mkdir -p www
           cp *.html *.css *.js www/ 2>/dev/null || true
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Sağlık Takipçim" "com.saglik.takip" --web-dir www
+          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/status-bar @codetrix-studio/capacitor-google-auth
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.saglik.takip",
+            "appName": "Sağlık Takipçim",
+            "webDir": "www",
+            "plugins": {
+              "StatusBar": {
+                "overlaysWebView": false,
+                "style": "DARK",
+                "backgroundColor": "#4f46e5"
+              },
+              "GoogleAuth": {
+                "scopes": ["profile", "email"],
+                "forceCodeForRefreshToken": true
+              }
+            }
+          }
+          EOF
           npx cap add android
           npx cap sync android
 
@@ -34,14 +51,28 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
 
+      - name: Keystore ve SHA-1 Kontrolü
+        run: |
+          mkdir -p ~/.android
+          if [ -f debug.keystore ]; then
+            cp debug.keystore ~/.android/debug.keystore
+          else
+            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            cp ~/.android/debug.keystore ./debug.keystore
+          fi
+          echo "=== FIREBASE ICIN SHA-1 PARMAK IZI ==="
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep SHA1
+
       - name: APK Derleme (Gradle)
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: APK Yükle
+      - name: APK ve Keystore Dosyalarını Yükle
         uses: actions/upload-artifact@v4
         with:
           name: SaglikTakipcim-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            debug.keystore
