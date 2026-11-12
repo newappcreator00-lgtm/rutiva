@@ -16,40 +16,23 @@ jobs:
       - name: Node.js Kurulumu
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
       - name: Web Dosyalarını Hazırla ve Capacitor Kur
         run: |
           mkdir -p www
           cp *.html *.css *.js www/ 2>/dev/null || true
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/status-bar @codetrix-studio/capacitor-google-auth
-          cat << 'EOF' > capacitor.config.json
-          {
-            "appId": "com.saglik.takip",
-            "appName": "Sağlık Takipçim",
-            "webDir": "www",
-            "plugins": {
-              "StatusBar": {
-                "overlaysWebView": false,
-                "style": "DARK",
-                "backgroundColor": "#4f46e5"
-              },
-              "GoogleAuth": {
-                "scopes": ["profile", "email"],
-                "forceCodeForRefreshToken": true
-              }
-            }
-          }
-          EOF
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/status-bar@6 @codetrix-studio/capacitor-google-auth --legacy-peer-deps
+          node -e 'const fs = require("fs"); fs.writeFileSync("capacitor.config.json", JSON.stringify({ appId: "com.saglik.takip", appName: "Sağlık Takipçim", webDir: "www", plugins: { StatusBar: { overlaysWebView: false, style: "DARK", backgroundColor: "#4f46e5" }, GoogleAuth: { scopes: ["profile", "email"], serverClientId: "270075251216-h45ek67k1cr9m0lctbplq4lssc6vb30u.apps.googleusercontent.com", clientId: "270075251216-h45ek67k1cr9m0lctbplq4lssc6vb30u.apps.googleusercontent.com", forceCodeForRefreshToken: true } } }, null, 2));'
           npx cap add android
           npx cap sync android
 
-      - name: Java 21 Kurulumu
+      - name: Java 17 Kurulumu
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '17'
 
       - name: Keystore ve SHA-1 Kontrolü
         run: |
