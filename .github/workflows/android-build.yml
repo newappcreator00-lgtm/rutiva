@@ -72,10 +72,8 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: APK ve Keystore Dosyalarını Yükle
+      - name: APK Dosyasını Yükle
         uses: actions/upload-artifact@v4
         with:
           name: Rutiva-Android-APK
-          path: |
-            android/app/build/outputs/apk/debug/app-debug.apk
-            debug.keystore
+          path: android/app/build/outputs/apk/debug/app-debug.apk
