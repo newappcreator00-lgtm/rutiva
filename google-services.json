@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "43145650313",
+    "project_id": "ilacstoktakip",
+    "storage_bucket": "ilacstoktakip.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:43145650313:android:0df797ec14ef8b74bce658",
+        "android_client_info": {
+          "package_name": "com.saglik.takip"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaJotKoVvF65SDW7vbjZ5gDjtsY0se3k4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "43145650313-0bkbp27rnedioo69t4u9tud96a4p6qj3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
