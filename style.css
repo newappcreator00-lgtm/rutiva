@@ -6,7 +6,21 @@ body {
     user-select: none;
 }
 
-/* Android Yumuşak Ekran Geçişi */
+/* Android Üst Bildirim Çubuğu (Status Bar) Boşluğu */
+.safe-top-header {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+body.is-native-android .safe-top-header {
+    padding-top: max(env(safe-area-inset-top), 32px);
+}
+
+/* Android Alt Gezinti Çubuğu (Navigation Bar) Boşluğu */
+.safe-bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 10px);
+}
+
+/* Ekran Geçiş Efekti */
 .page-view {
     animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
