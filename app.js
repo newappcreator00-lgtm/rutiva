@@ -1,4 +1,4 @@
-// ================= GERÇEK FIREBASE YAPILANDIRMASI =================
+// ================= FIREBASE YAPILANDIRMASI (ilacstoktakip) =================
 const firebaseConfig = {
     apiKey: "AIzaSyDtWxNuLa9z3O9gA6Mg7wJ43XbIhVLYark",
     authDomain: "ilacstoktakip.firebaseapp.com",
@@ -9,10 +9,48 @@ const firebaseConfig = {
     measurementId: "G-TTN7GS1SZ6"
 };
 
+// Firebase Console -> ilacstoktakip -> Authentication -> Google -> Web SDK configuration içindeki Web Client ID:
+const GOOGLE_WEB_CLIENT_ID = "BURAYA_ILACSTOKTAKIP_WEB_CLIENT_ID_YAPISTIRIN";
+
 let currentUser = null;
 let db = null;
 let auth = null;
 let analytics = null;
+
+// Android Native (Capacitor) Kontrolü
+function isNativeAndroid() {
+    return Boolean(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+}
+
+// Android Bildirim Çubuğu ve Native Google Auth Başlatma
+async function initNativeAndroidFeatures() {
+    if (!isNativeAndroid()) return;
+
+    document.body.classList.add('is-native-android');
+
+    try {
+        const StatusBar = window.Capacitor.Plugins?.StatusBar;
+        if (StatusBar) {
+            await StatusBar.setOverlaysWebView({ overlay: false });
+            await StatusBar.setBackgroundColor({ color: '#4f46e5' });
+        }
+    } catch (err) {
+        console.warn("StatusBar ayarlanamadı:", err);
+    }
+
+    try {
+        const GoogleAuth = window.Capacitor.Plugins?.GoogleAuth;
+        if (GoogleAuth) {
+            await GoogleAuth.initialize({
+                clientId: GOOGLE_WEB_CLIENT_ID,
+                scopes: ['profile', 'email'],
+                grantOfflineAccess: true
+            });
+        }
+    } catch (err) {
+        console.warn("GoogleAuth başlatılamadı:", err);
+    }
+}
 
 // Firebase Başlatma
 try {
@@ -27,9 +65,9 @@ try {
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
-            document.getElementById('loginBtn')?.classList.add('hidden');
             document.getElementById('userInfo')?.classList.remove('hidden');
             document.getElementById('homeLoginBtn')?.classList.add('hidden');
+            document.getElementById('mobileBottomNav')?.classList.remove('hidden');
             
             document.getElementById('profileName').innerText = user.displayName || 'Kullanıcı';
             document.getElementById('profileStatus').innerText = 'Google Bulut Senkronizasyonu Aktif';
@@ -37,14 +75,16 @@ try {
             document.getElementById('profileAvatar').src = user.photoURL || 'https://via.placeholder.com/80';
             
             loadFromCloud();
+            navigateTo('page-home');
         } else {
             currentUser = null;
-            document.getElementById('loginBtn')?.classList.remove('hidden');
             document.getElementById('userInfo')?.classList.add('hidden');
             document.getElementById('homeLoginBtn')?.classList.remove('hidden');
             document.getElementById('profileName').innerText = 'Hoş Geldiniz';
             document.getElementById('profileStatus').innerText = 'Yerel Mod (Cihaz Hafızası)';
             document.getElementById('profileAvatar').src = 'https://via.placeholder.com/80?text=Kullan%C4%B1c%C4%B1';
+            
+            navigateTo('page-login');
         }
     });
 } catch (e) {
@@ -58,7 +98,6 @@ let notes = JSON.parse(localStorage.getItem('notes')) || [];
 let currentActiveAlarmMedId = null;
 let currentCalendarDate = new Date();
 
-// YYYY-MM-DD Formatında Tarih Alıcı
 function getTodayString(dateObj = new Date()) {
     const offset = dateObj.getTimezoneOffset();
     const date = new Date(dateObj.getTime() - (offset * 60 * 1000));
@@ -67,6 +106,7 @@ function getTodayString(dateObj = new Date()) {
 
 // --- ARAYÜZ YÜKLENDİĞİNDE ---
 window.addEventListener('DOMContentLoaded', () => {
+    initNativeAndroidFeatures();
     requestNotificationPermission();
     renderMeds();
     renderAppointments();
@@ -103,6 +143,11 @@ window.navigateTo = function(pageId) {
     if (pageId === 'page-home') renderHomeTodayMeds();
 };
 
+window.continueAsGuest = function() {
+    document.getElementById('mobileBottomNav')?.classList.remove('hidden');
+    navigateTo('page-home');
+};
+
 function requestNotificationPermission() {
     if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
@@ -114,7 +159,6 @@ function setupEventListeners() {
     document.getElementById('appForm')?.addEventListener('submit', addAppointment);
     document.getElementById('noteForm')?.addEventListener('submit', addNote);
 
-    document.getElementById('loginBtn')?.addEventListener('click', loginWithGoogle);
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
 
     document.getElementById('snoozeBtn')?.addEventListener('click', snoozeAlarm);
@@ -123,7 +167,60 @@ function setupEventListeners() {
     document.getElementById('closeDetailIconBtn')?.addEventListener('click', closeDetailModal);
 }
 
-// ================= NOT DEFTORİ MODÜLÜ =================
+// ================= GOOGLE İLE GİRİŞ (ANDROID NATIVE + WEB) =================
+window.loginWithGoogle = async function() {
+    if (!auth) {
+        alert("Firebase bağlantısı kurulamadı.");
+        return;
+    }
+
+    // 1. Android APK içinde çalışıyorsa telefonun yerel Google hesap seçicisini aç (localhost hatasını önler)
+    if (isNativeAndroid()) {
+        const GoogleAuth = window.Capacitor.Plugins?.GoogleAuth;
+        if (!GoogleAuth) {
+            alert("Android Google Giriş eklentisi bulunamadı.");
+            return;
+        }
+        try {
+            const googleUser = await GoogleAuth.signIn();
+            const idToken = googleUser.authentication?.idToken || googleUser.idToken;
+            if (!idToken) {
+                alert("Google kimlik belirteci (idToken) alınamadı. Web Client ID ayarını kontrol edin.");
+                return;
+            }
+            const credential = firebase.auth.GoogleAuthProvider.credential(idToken);
+            await auth.signInWithCredential(credential);
+        } catch (error) {
+            console.error("Android Google Giriş Hatası:", error);
+            alert("Giriş yapılamadı: " + (error.message || JSON.stringify(error)));
+        }
+        return;
+    }
+
+    // 2. Web tarayıcısında (Render.com) çalışıyorsa Popup kullan
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    auth.signInWithPopup(provider).catch(error => {
+        console.error("Web Giriş Hatası:", error);
+        alert("Giriş Hatası: " + error.message);
+    });
+};
+
+async function logout() {
+    try {
+        if (isNativeAndroid() && window.Capacitor.Plugins?.GoogleAuth) {
+            await window.Capacitor.Plugins.GoogleAuth.signOut();
+        }
+    } catch (e) {}
+
+    if (auth) {
+        auth.signOut().then(() => {
+            navigateTo('page-login');
+        });
+    }
+}
+
+// ================= NOT DEFTERİ MODÜLÜ =================
 function addNote(e) {
     e.preventDefault();
     const title = document.getElementById('noteTitle').value;
@@ -184,7 +281,7 @@ function saveNotes() {
     syncToCloud();
 }
 
-// ================= İLAÇ YÖNETİMİ & DOZ KİLİDİ =================
+// ================= İLAÇ YÖNETİMİ =================
 function addMedication(e) {
     e.preventDefault();
     const total = parseInt(document.getElementById('medTotal').value);
@@ -654,17 +751,4 @@ function loadFromCloud() {
             }
         });
     }
-}
-
-window.loginWithGoogle = function() {
-    if (!auth) {
-        alert("Firebase henüz hazır değil.");
-        return;
-    }
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(error => console.error("Giriş Hatası:", error));
-};
-
-function logout() {
-    if (auth) auth.signOut();
 }
